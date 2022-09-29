@@ -1,0 +1,3 @@
+for ("passed"; false; x) {
+    "";
+};
