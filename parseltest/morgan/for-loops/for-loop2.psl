@@ -1,0 +1,3 @@
+for (x; print("failed"); 0) {
+    "";
+};

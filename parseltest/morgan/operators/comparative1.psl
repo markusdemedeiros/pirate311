@@ -1,0 +1,5 @@
+if <(0, 1) then print("passed\n") else print("failed\n");
+if <(1, 0) then print("failed\n") else print("passed\n");
+if >(1, 0) then print("passed\n") else print("failed\n");
+if >(0, 1) then print("failed") else print("passed");
+"";

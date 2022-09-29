@@ -1,0 +1,2 @@
+{one: print("1"), two: print("2"), three: print("3")};
+"";
