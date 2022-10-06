@@ -1,0 +1,1 @@
+defvar o = {x: 4, x: 5} in { o.x }

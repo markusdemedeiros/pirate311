@@ -1,0 +1,5 @@
+defvar x = 0 in
+deffun inc() x++ in
+deffun dec() x-- in {
+  inc(); dec(); dec(); inc();
+}

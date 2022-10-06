@@ -1,0 +1,6 @@
+defvar x = 4 in {
+	while(>(x,0)) {
+		x--;
+    	print(x);
+	}
+}
