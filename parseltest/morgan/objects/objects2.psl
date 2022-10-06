@@ -1,0 +1,2 @@
+{one: print("failed"), one: print("failed")};
+"";

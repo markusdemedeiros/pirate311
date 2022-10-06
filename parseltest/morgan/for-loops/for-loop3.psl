@@ -1,0 +1,3 @@
+for (print("passed\n"); x; 0) {
+    "";
+};
