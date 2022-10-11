@@ -1,0 +1,4 @@
+defvar x = (lambda(x) {x++}) in
+deffun y(n,k) k(n) in {
+  y(5,x);
+}
