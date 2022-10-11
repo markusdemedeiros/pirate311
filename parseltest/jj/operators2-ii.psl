@@ -1,0 +1,3 @@
+defvar x = 0 in {
+    x++;
+}
