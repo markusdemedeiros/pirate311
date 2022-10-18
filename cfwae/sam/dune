@@ -1,0 +1,11 @@
+(executable
+ (name cfwae)
+ (flags (:standard -w -32 -w -39)))
+
+(coq.extraction
+ (prelude interpreter)
+ (extracted_modules interpreter))
+
+(ocamllex lexer)
+(menhir
+ (modules parser))

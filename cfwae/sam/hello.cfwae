@@ -1,0 +1,10 @@
+{with {{z3 {fun {f}
+                {{fun {g} {fun {x y} {f {g g} x y}}}
+                 {fun {g} {fun {x y} {f {g g} x y}}}}}}}
+      {with {{ack
+              {z3
+               {fun {f m n}
+                    {if0 m {+ n 1}
+                         {if0 n {f {- m 1} 1}
+                              {f {- m 1} {f m {- n 1}}}}}}}}}
+            {ack 3 4}}}
