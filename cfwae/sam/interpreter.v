@@ -103,13 +103,6 @@ Inductive step : cfwae -> cfwae -> Prop :=
 
 where "a --> b" := (step a b).
 
-(* Reflexive, transitive closure of step relation *)
-Reserved Notation "a -->* b" (at level 55).
-Inductive multi_step : cfwae -> cfwae -> Prop :=
-| MS_Refl : forall e, e -->* e
-| MS_Step : forall e e' e'', e -->* e' -> e' --> e'' -> e -->* e''
-where "a -->* b" := (multi_step a b).
-
 (* ------------------------------------------------- *)
 (* Semantics done.  Implementation from here on out. *)
 (* ------------------------------------------------- *)
@@ -300,7 +293,7 @@ Inductive state_inv : cfwae -> runtime_val -> Prop :=
    functions with closures where substituting the captured environment would
    result in the same thing.
 
-   If we wanted to allowe the interpreter to manipulate variable names, we would
+   If we wanted to allow the interpreter to manipulate variable names, we would
    have to make this smart by allowing alpha-equivalent function bodies. *)
 | SI_Fun : forall vs exprs env b1 b2,
     (* Relate each captured runtime_val with an expression to substitute. *)
@@ -308,3 +301,35 @@ Inductive state_inv : cfwae -> runtime_val -> Prop :=
     -> Env.fold (fun v e => subst e v) exprs b1 = b2
     -> Fun vs b1 ~ RV_Closure env vs b2
 where "a ~ b" := (state_inv a b).
+
+(* Reflexive, transitive closure of step relation *)
+Reserved Notation "a -->* b" (at level 55).
+Inductive multi_step : cfwae -> cfwae -> Prop :=
+| MS_Refl : forall e, e -->* e
+| MS_Step : forall e e' e'', e --> e' -> e' -->* e'' -> e -->* e''
+where "a -->* b" := (multi_step a b).
+
+Definition frob {E R} (i : itree E R) : itree E R :=
+  match i with
+  | Ret x => Ret x
+  | Tau t => Tau t
+  | Vis e k => Vis e k
+  end.
+
+(* Force coq to reduce a cofix *)
+(* http://adam.chlipala.net/cpdt/html/Coinductive.html *)
+Lemma frob_eq {E R} : forall (i : itree E R), i = frob i.
+destruct i; reflexivity.
+Qed.
+
+Ltac frob := simpl; rewrite frob_eq; simpl.
+
+(* wip *)
+CoInductive simulates :
+  cfwae -> Env.t runtime_val ->interp_M runtime_val -> Prop :=
+| Sim_Val : forall e env rv, e ~ rv -> simulates e env (Ret rv)
+| Sim_Step : forall e1 e2 e3 env1 env2 env3 rv k,
+    e1 -->* e3
+    -> simulates e2 env2 (Ret rv)
+    -> simulates e3 env3 (k rv)
+    -> simulates e1 env1 (Vis (inl (EV_Eval env2 e2)) k).
