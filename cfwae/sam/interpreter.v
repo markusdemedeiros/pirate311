@@ -62,8 +62,10 @@ Inductive value : cfwae -> Prop :=
    even though we have no side effects (yet?) *)
 Inductive step : cfwae -> cfwae -> Prop :=
 
-| S_Primop_l : forall op e1 e1' e2, e1 --> e1' -> Primop op e1 e2 --> Primop op e1' e2
-| S_Primop_r : forall op v1 e2 e2', e2 --> e2' -> Primop op (Num v1) e2 --> Primop op (Num v1) e2'
+| S_Primop_l : forall op e1 e1' e2,
+    e1 --> e1' -> Primop op e1 e2 --> Primop op e1' e2
+| S_Primop_r : forall op v1 e2 e2',
+    e2 --> e2' -> Primop op (Num v1) e2 --> Primop op (Num v1) e2'
 | S_Primop : forall op v1 v2 v,
     step_primop op v1 v2 v
     -> Primop op (Num v1) (Num v2) --> Num v
@@ -85,7 +87,8 @@ Inductive step : cfwae -> cfwae -> Prop :=
     -> NoDup (map fst bs)
     -> With bs body --> subst_all bs body
 
-(* Evaluate the function value and then arguments left to right in a similar way. *)
+(* Evaluate the function value and then arguments left to right in a similar
+   way. *)
 | S_App_fun : forall f f' es, f --> f' -> App f es --> App f' es
 | S_App_arg : forall f es1 e e' es2,
     value f
@@ -112,10 +115,8 @@ where "a -->* b" := (multi_step a b).
 (* ------------------------------------------------- *)
 
 Require Import Int OrderedTypeEx FMapAVL.
-Require FMapFacts.
 
 Module Env := FMapAVL.Make (String_as_OT).
-Module EnvProps := FMapFacts.Properties (Env).
 
 Inductive err :=
 | E_Unbound : string -> err
@@ -125,7 +126,8 @@ Inductive err :=
 | E_ArgNum
 | E_Div0.
 
-(* I'm not digging into the guts of FMapAVL to figure out why coq won't see through the record *)
+(* I'm not digging into the guts of FMapAVL to figure out why coq won't see
+   through the record *)
 #[bypass_check(positivity)]
 Inductive runtime_val :=
 | RV_Num : int -> runtime_val
@@ -189,7 +191,8 @@ Definition r_err {A} (e : err) : interp_M A :=
 Definition r_eval (env : Env.t runtime_val) (e : cfwae) : interp_M runtime_val :=
   trigger (inl (EV_Eval env e)).
 
-Fixpoint r_eval_binds (env acc : Env.t runtime_val) (vs : list string) (es : list cfwae) :
+Fixpoint r_eval_binds
+(env acc : Env.t runtime_val) (vs : list string) (es : list cfwae) :
   interp_M (Env.t runtime_val) :=
   match vs, es with
   | nil, nil => Ret acc
@@ -210,7 +213,8 @@ Definition eval_primop (p : primop) (n1 n2 : int) : interp_M runtime_val :=
       else Ret (RV_Num (div n1 n2))
   end.
 
-Definition h_eval : forall X, eval_event X -> itree (fun T => sum (eval_event T) (runtime_event T)) X :=
+Definition h_eval : forall X,
+    eval_event X -> itree (fun T => sum (eval_event T) (runtime_event T)) X :=
   fun _ '(EV_Eval env e) =>
     match e with
     | Num x => Ret (RV_Num x)
@@ -277,3 +281,30 @@ Extraction "interpreter.ml" eval.
 (* ------------------------------------------------- *)
 (* Proofs of correctness                             *)
 (* ------------------------------------------------- *)
+
+Require FMapFacts.
+Module EnvProps := FMapFacts.Properties (Env).
+
+Definition subst_env := Env.fold (fun v e => subst e v).
+
+(* First, we need to establish the relationship between runtime_vals in the
+   interpreter, and CFWAE terms in head normal form (no redexes except until
+   lambda). *)
+Reserved Notation "a ~ b" (at level 70).
+Inductive state_inv : cfwae -> runtime_val -> Prop :=
+(* Numbers are easy *)
+| SI_Num : forall n, Num n ~ RV_Num n
+
+(* Functions are harder: in the small step semantics, we substituted the
+   evaluated function arguments directly into the body.  We have to equate those
+   functions with closures where substituting the captured environment would
+   result in the same thing.
+
+   If we wanted to allowe the interpreter to manipulate variable names, we would
+   have to make this smart by allowing alpha-equivalent function bodies. *)
+| SI_Fun : forall vs exprs env b1 b2,
+    (* Relate each captured runtime_val with an expression to substitute. *)
+    (forall v e rv, Env.MapsTo v e exprs -> Env.MapsTo v rv env -> e ~ rv)
+    -> Env.fold (fun v e => subst e v) exprs b1 = b2
+    -> Fun vs b1 ~ RV_Closure env vs b2
+where "a ~ b" := (state_inv a b).
